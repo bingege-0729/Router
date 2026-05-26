@@ -2,9 +2,11 @@ package com.javaee.backend.entity.enrichment;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class SentimentScore {
     private double positive;      // 正向得分 0-1
     private double negative;      // 负向得分 0-1

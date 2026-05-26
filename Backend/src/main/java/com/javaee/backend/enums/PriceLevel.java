@@ -1,6 +1,6 @@
 package com.javaee.backend.enums;
 
-
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum PriceLevel {
     CHEAP("💰", 0, 50, "便宜"),
@@ -18,6 +18,11 @@ public enum PriceLevel {
         this.min = min;
         this.max = max;
         this.desc = desc;
+    }
+
+    @JsonValue
+    public String getDesc() {
+        return desc;
     }
 
     public static PriceLevel fromPrice(double price) {

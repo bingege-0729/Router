@@ -1,6 +1,6 @@
 package com.javaee.backend.enums;
 
-
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum POICategory {
     // 景点类
@@ -30,8 +30,9 @@ public enum POICategory {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    @JsonValue
+    public String getValue() {
+        return this.name();
     }
 
     public boolean isFoodRelated() {
