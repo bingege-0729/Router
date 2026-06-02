@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.javaee.backend.entity.enrichment.SentimentScore;
-import com.javaee.backend.entity.geo.Location;
+
 import com.javaee.backend.enums.POICategory;
 import com.javaee.backend.enums.PriceLevel;
 import lombok.AllArgsConstructor;
@@ -78,6 +78,9 @@ public class POI {
     @TableField(exist = false)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private SentimentScore sentimentScore;  // 情感分析得分
-
+    
+    @TableField(exist = false)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private String description;             // LLM生成的亮点描述（不持久化）
 
 }

@@ -11,6 +11,8 @@ public interface POIService extends IService<POI> {
 
     POI getPOIById(String id);
 
+    POI getByName(String name);
+
     List<POI> getAll();
 
     List<POI> getByCategory(String category);

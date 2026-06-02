@@ -1,0 +1,43 @@
+package com.example.route.model.dto;
+
+import lombok.Builder;
+import lombok.Data;
+import java.util.List;
+
+@Data
+@Builder
+public class RouteResult {
+    private String routeId;
+    private String summary;              // 路线概述
+    private Integer totalDuration;       // 总时长（分钟）
+    private Double totalCost;            // 总花费
+    private Integer totalDistance;       // 总距离（米）
+    private List<RouteSegment> segments; // 路线段列表
+    private List<AlternativeRoute> alternatives; // 备选方案
+}
+
+@Data
+@Builder
+public class RouteSegment {
+    private Integer sequence;            // 顺序：1,2,3...
+    private String poiId;
+    private String poiName;
+    private String category;
+    private String arriveTime;           // "10:00"
+    private String leaveTime;            // "12:00"
+    private Integer stayDuration;        // 停留时长（分钟）
+    private Integer travelDuration;      // 上一站到本站交通时长（分钟）
+    private Integer travelDistance;      // 交通距离（米）
+    private String address;
+    private Double cost;
+    private String tip;                  // 小贴士
+}
+
+@Data
+@Builder
+public class AlternativeRoute {
+    private String name;                 // "省时版" / "省钱版"
+    private String description;
+    private Integer totalDuration;
+    private Double totalCost;
+}

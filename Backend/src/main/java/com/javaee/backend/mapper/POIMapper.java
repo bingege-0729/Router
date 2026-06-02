@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.javaee.backend.entity.POI;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -36,12 +35,10 @@ public interface POIMapper extends BaseMapper<POI> {
                            );
 
     /**
-     * 获取热门POI
+     * 获取热门POI（实现在XML中）
      * @param limit
      * @return
      */
-
-    @Select("SELECT * FROM poi ORDER BY likes DESC LIMIT #{limit}")
-    List<Map<String, Object>> getHotPOIs(@Param("limit")Integer  limit);
+    List<Map<String, Object>> getHotPOIs(@Param("limit")Integer limit);
 
 }
