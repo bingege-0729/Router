@@ -4,71 +4,79 @@
     <section class="hero">
       <h1>智能路线规划系统</h1>
       <p class="hero-subtitle">基于算法优化，为您生成最优出行路线方案</p>
-      <button class="btn-primary" @click="$router.push('/route')">
+      <el-button type="primary" size="large" @click="$router.push('/route')">
         开始规划
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-left: 6px; vertical-align: middle;">
-          <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+        <el-icon><Right /></el-icon>
+      </el-button>
     </section>
 
     <!-- Features -->
     <section class="features-section">
-      <div class="feature-grid">
-        <article v-for="item in features" :key="item.title" class="card feature-card">
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.desc }}</p>
-        </article>
-      </div>
+      <el-row :gutter="24">
+        <el-col :xs="24" :sm="8" v-for="item in features" :key="item.title">
+          <el-card shadow="never" class="feature-card">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.desc }}</p>
+          </el-card>
+        </el-col>
+      </el-row>
     </section>
 
     <!-- Quick Start -->
     <section class="quick-section">
-      <h2>快速体验</h2>
-      
-      <form @submit.prevent="handlePlan" class="quick-form">
-        <div class="form-group">
-          <label class="form-label">出行需求</label>
-          <input 
-            v-model="form.query"
-            type="text"
-            class="input-field"
-            placeholder="例如：周末想去公园和博物馆"
-          />
-        </div>
+      <el-card shadow="never">
+        <template #header>
+          <h2>快速体验</h2>
+        </template>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">游玩时长</label>
-            <select v-model="form.hours" class="select-field">
-              <option :value="2">2小时（快速）</option>
-              <option :value="4">4小时（半天）</option>
-              <option :value="6">6小时（推荐）</option>
-              <option :value="8">8小时（全天）</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">预算范围（元）</label>
-            <input 
-              v-model.number="form.budget"
-              type="number"
-              class="input-field"
-              min="100"
-              max="5000"
-              step="100"
+        <el-form :model="form" label-position="top" class="quick-form">
+          <el-form-item label="出行需求">
+            <el-input
+              v-model="form.query"
+              placeholder="例如：周末想去公园和博物馆"
+              size="large"
+              clearable
             />
-          </div>
-        </div>
+          </el-form-item>
 
-        <button 
-          type="submit" 
-          class="btn-primary btn-block"
-          :disabled="loading"
-        >
-          {{ loading ? '正在规划...' : '生成路线' }}
-        </button>
-      </form>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="游玩时长">
+                <el-select v-model="form.hours" size="large" style="width:100%">
+                  <el-option label="2小时（快速）" :value="2" />
+                  <el-option label="4小时（半天）" :value="4" />
+                  <el-option label="6小时（推荐）" :value="6" />
+                  <el-option label="8小时（全天）" :value="8" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="预算范围（元）">
+                <el-input-number
+                  v-model="form.budget"
+                  size="large"
+                  style="width:100%"
+                  :min="100"
+                  :max="5000"
+                  :step="100"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-form-item>
+            <el-button
+              type="primary"
+              size="large"
+              @click="handlePlan"
+              :loading="loading"
+              style="width: 100%"
+            >
+              {{ loading ? '正在规划...' : '生成路线' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
     </section>
   </div>
 </template>
@@ -76,7 +84,9 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { Right } from '@element-plus/icons-vue'
 import { routeApi } from '@/api/request'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -103,9 +113,13 @@ const features = [
 ]
 
 const handlePlan = async () => {
-  if (!form.query.trim()) return
-  
+  if (!form.query.trim()) {
+    ElMessage.warning('请输入您的出行需求')
+    return
+  }
+
   loading.value = true
+
   try {
     const response = await routeApi.planRoute({
       query: form.query,
@@ -115,7 +129,7 @@ const handlePlan = async () => {
       startLng: 120.1551,
       optimizationGoal: 'BALANCED'
     })
-    
+
     if (response?.success && response?.data) {
       router.push({ path: '/route', query: { result: JSON.stringify(response.data) } })
     }
@@ -128,139 +142,91 @@ const handlePlan = async () => {
 </script>
 
 <style scoped>
-/* ===== Design Tokens ===== */
+/* Design Tokens - 按 DESIGN.md */
 .home {
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --surface: #F9FAFB;
-  --border: #E5E7EB;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-surface: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
 
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px 24px;
 }
 
-/* ===== Typography (按DESIGN.md) ===== */
-.home h1 {
-  /* H1: 32px / 600 / 1.25 */
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: #FFFFFF;
-  margin: 0 0 16px 0;
-  letter-spacing: -0.5px;
-}
-
-.home h2 {
-  /* H2: 24px / 600 / 1.35 */
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--text-primary);
-  margin: 0 0 20px 0;
-}
-
-.home h3 {
-  /* H3: 18px / 600 / 1.4 */
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-}
-
-.home p {
-  /* Body: 15px / 400 / 1.6 */
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.6;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-/* ===== Spacing System (Base: 4px) ===== */
-/* xs=4 sm=8 md=16 lg=24 xl=32 xxl=48 */
-
-/* ===== Hero Section ===== */
+/* Hero Section */
 .hero {
   background-color: #111827;
   border-radius: 8px;
   padding: 80px 40px;
   text-align: center;
-  margin-bottom: 48px; /* xl */
+  color: #FFFFFF;
+  margin-bottom: 48px;
+}
+
+.hero h1 {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
 }
 
 .hero-subtitle {
+  font-size: 18px;
   color: rgba(255, 255, 255, 0.75);
-  margin-bottom: 32px; /* xl */
+  line-height: 1.6;
+  margin-bottom: 32px;
 }
 
-/* ===== Button (按DESIGN.md组件规范) ===== */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary);
-  color: #FFFFFF;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.btn-block {
-  width: 100%;
-  padding: 12px 20px;
-}
-
-.btn-primary:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-/* ===== Features Section ===== */
+/* Features Section */
 .features-section {
-  margin-bottom: 48px; /* xl */
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px; /* lg */
-}
-
-/* ===== Card (按DESIGN.md组件规范) ===== */
-.card {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: box-shadow 0.15s ease;
+  margin-bottom: 48px;
 }
 
 .feature-card {
-  padding: 24px; /* lg */
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  transition: box-shadow 0.15s ease;
 }
 
 .feature-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* 按规范 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* ===== Quick Start Section ===== */
+.feature-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 12px 0;
+}
+
+.feature-card p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Quick Start Section */
 .quick-section {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+
+.quick-section .el-card {
   border-radius: 8px;
-  padding: 24px; /* lg */
+  border: 1px solid var(--color-border);
+}
+
+.quick-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 .quick-form {
@@ -268,77 +234,28 @@ const handlePlan = async () => {
   margin: 0 auto;
 }
 
-.form-group {
-  margin-bottom: 16px; /* md */
-}
-
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 8px; /* sm */
-}
-
-/* ===== Input (按DESIGN.md组件规范) ===== */
-.input-field,
-.select-field {
-  width: 100%;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  background: #FFFFFF;
-  color: var(--text-primary);
-  box-sizing: border-box;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input-field:focus,
-.select-field:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* 按规范 */
-}
-
-.input-field::placeholder {
-  color: var(--text-muted);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px; /* md */
-}
-
-/* ===== Responsive ===== */
+/* Responsive */
 @media (max-width: 768px) {
   .home {
-    padding: 16px; /* md */
+    padding: 16px;
   }
 
   .hero {
-    padding: 48px 24px; /* lg md */
-    margin-bottom: 32px; /* lg */
+    padding: 48px 24px;
+    margin-bottom: 32px;
   }
 
-  .home h1 {
+  .hero h1 {
     font-size: 26px;
   }
 
   .hero-subtitle {
-    font-size: 15px; /* Small */
-    margin-bottom: 24px; /* lg */
+    font-size: 15px;
+    margin-bottom: 24px;
   }
 
-  .feature-grid {
-    grid-template-columns: 1fr;
-    gap: 16px; /* md */
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
+  .features-section {
+    margin-bottom: 32px;
   }
 }
 </style>

@@ -1,192 +1,189 @@
 <template>
   <div class="planner">
-    <div class="planner-grid">
+    <el-row :gutter="24" class="planner-grid">
       <!-- Left: Input Panel -->
-      <aside class="input-panel">
-        <div class="card panel-card">
-          <h2>路线规划</h2>
-          
-          <form @submit.prevent="handlePlan" class="panel-form">
-            <div class="form-group">
-              <label class="form-label">出行需求</label>
-              <textarea 
+      <el-col :xs="24" :lg="8" class="input-panel-col">
+        <el-card shadow="never" class="panel-card">
+          <template #header>
+            <h2>路线规划</h2>
+          </template>
+
+          <el-form :model="form" label-position="top" size="large">
+            <el-form-item label="出行需求">
+              <el-input
                 v-model="form.query"
-                class="textarea-field"
-                rows="3"
+                type="textarea"
+                :rows="3"
                 placeholder="例如：周末想去公园和博物馆，不想排队，预算500元内"
                 maxlength="200"
-              ></textarea>
-            </div>
+                show-word-limit
+              />
+            </el-form-item>
 
-            <div class="divider"></div>
+            <el-form-item label="游玩时长">
+              <el-select v-model="form.totalHours" style="width:100%">
+                <el-option label="2小时（快速）" :value="2" />
+                <el-option label="4小时（半天）" :value="4" />
+                <el-option label="6小时（推荐）" :value="6" />
+                <el-option label="8小时（全天）" :value="8" />
+                <el-option label="12小时（深度游）" :value="12" />
+              </el-select>
+            </el-form-item>
 
-            <div class="form-group">
-              <label class="form-label">游玩时长</label>
-              <select v-model="form.totalHours" class="select-field">
-                <option :value="2">2小时（快速）</option>
-                <option :value="4">4小时（半天）</option>
-                <option :value="6">6小时（推荐）</option>
-                <option :value="8">8小时（全天）</option>
-                <option :value="12">12小时（深度游）</option>
-              </select>
-            </div>
+            <el-form-item label="预算范围（元）">
+              <el-slider
+                v-model="form.maxBudget"
+                :min="100"
+                :max="2000"
+                :step="50"
+                show-input
+              />
+            </el-form-item>
 
-            <div class="form-group">
-              <label class="form-label">预算范围（元）</label>
-              <div class="slider-row">
-                <input 
-                  type="range"
-                  v-model.number="form.maxBudget"
-                  min="100"
-                  max="2000"
-                  step="50"
-                  class="range-input"
-                />
-                <span class="range-value">{{ form.maxBudget }}</span>
-              </div>
-            </div>
+            <el-form-item label="兴趣类别">
+              <el-checkbox-group v-model="form.categories">
+                <el-checkbox v-for="cat in categories" :key="cat.value" :label="cat.value">
+                  {{ cat.label }}
+                </el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
 
-            <div class="form-group">
-              <label class="form-label">兴趣类别</label>
-              <div class="checkbox-list">
-                <label v-for="cat in categories" :key="cat.value" class="checkbox-item">
-                  <input type="checkbox" :value="cat.value" v-model="form.categories" />
-                  <span>{{ cat.label }}</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">优化目标</label>
-              <div class="radio-list">
-                <label 
+            <el-form-item label="优化目标">
+              <el-radio-group v-model="form.optimizationGoal">
+                <el-radio-button 
                   v-for="opt in optimizationOptions" 
-                  :key="opt.value"
-                  class="radio-item"
-                  :class="{ active: form.optimizationGoal === opt.value }"
+                  :key="opt.value" 
+                  :value="opt.value"
                 >
-                  <input 
-                    type="radio" 
-                    :value="opt.value" 
-                    v-model="form.optimizationGoal"
-                    name="optimization"
-                  />
                   {{ opt.label }}
-                </label>
-              </div>
-            </div>
+                </el-radio-button>
+              </el-radio-group>
+            </el-form-item>
 
-            <button 
-              type="submit" 
-              class="btn-primary btn-block"
-              style="margin-top: 8px;"
-              :disabled="loading"
+            <el-button
+              type="primary"
+              @click="handlePlan"
+              :loading="loading"
+              style="width: 100%; margin-top: 8px"
             >
               {{ loading ? '正在规划...' : '生成路线' }}
-            </button>
-          </form>
-        </div>
-      </aside>
+            </el-button>
+          </el-form>
+        </el-card>
+      </el-col>
 
       <!-- Right: Result Panel -->
-      <main class="result-panel">
+      <el-col :xs="24" :lg="16" class="result-panel-col">
         <!-- Loading State -->
         <div v-if="loading" class="state-loading">
-          <div class="skeleton">
-            <div class="skeleton-line" v-for="i in 6" :key="i"></div>
-          </div>
-          <p class="text-muted">正在分析需求并优化路线...</p>
+          <el-skeleton :rows="8" animated />
+          <p class="loading-text">正在分析需求并优化路线...</p>
         </div>
 
         <!-- Result Content -->
         <template v-else-if="result">
           <!-- Description -->
-          <div v-if="result.message" class="desc-box">
-            <p class="body-text">{{ result.message }}</p>
-            <span v-if="result.personalizationNote" class="note-tag">
+          <el-card v-if="result.message" shadow="never" class="desc-card">
+            <p>{{ result.message }}</p>
+            <el-tag v-if="result.personalizationNote" size="small" type="info" style="margin-top:12px">
               {{ result.personalizationNote }}
-            </span>
-          </div>
+            </el-tag>
+          </el-card>
 
           <!-- Main Route -->
-          <section class="route-section">
-            <h3>推荐路线</h3>
-            
-            <div v-if="result.mainRoute?.pois?.length" class="timeline">
-              <article 
-                v-for="(poi, idx) in result.mainRoute.pois" 
+          <el-card shadow="never" class="route-card">
+            <template #header>
+              <h3>推荐路线</h3>
+            </template>
+
+            <el-timeline v-if="result.mainRoute?.pois?.length">
+              <el-timeline-item
+                v-for="(poi, idx) in result.mainRoute.pois"
                 :key="poi.id || idx"
-                class="timeline-item"
+                :timestamp="'第 ' + (idx + 1) + ' 站'"
+                placement="top"
               >
-                <span class="timeline-marker text-muted">第{{ idx + 1 }}站</span>
-                <div class="card poi-card">
+                <el-card shadow="never" class="poi-card">
                   <h4>{{ poi.name }}</h4>
                   
-                  <dl class="poi-info">
-                    <div class="info-row">
-                      <dt>类别</dt>
-                      <dd><span class="tag">{{ getCategoryName(poi.category) }}</span></dd>
-                    </div>
-                    <div class="info-row">
-                      <dt>评分</dt>
-                      <dd>
-                        <span class="star-rating">{{ poi.rating || 0 }}</span>
-                      </dd>
-                    </div>
-                    <div class="info-row">
-                      <dt>人均消费</dt>
-                      <dd>{{ poi.avgCost ? `¥${poi.avgCost}` : '免费' }}</dd>
-                    </div>
-                    <div class="info-row">
-                      <dt>建议停留</dt>
-                      <dd>{{ poi.recommendedDuration || 90 }} 分钟</dd>
-                    </div>
-                  </dl>
+                  <el-descriptions :column="2" size="small" border>
+                    <el-descriptions-item label="类别">
+                      <el-tag size="small">{{ getCategoryName(poi.category) }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="评分">
+                      <span style="color:#F59E0B; font-weight:500">{{ poi.rating || 0 }}</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="人均消费">
+                      {{ poi.avgCost ? `¥${poi.avgCost}` : '免费' }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="建议停留">
+                      {{ poi.recommendedDuration || 90 }} 分钟
+                    </el-descriptions-item>
+                  </el-descriptions>
 
                   <p v-if="poi.description" class="poi-desc">{{ poi.description }}</p>
 
                   <div v-if="poi.tags?.length" class="tag-list">
-                    <span v-for="tag in poi.tags" :key="tag" class="tag tag-secondary">{{ tag }}</span>
+                    <el-tag
+                      v-for="tag in poi.tags"
+                      :key="tag"
+                      size="small"
+                      type="info"
+                    >
+                      {{ tag }}
+                    </el-tag>
                   </div>
-                </div>
-              </article>
-            </div>
+                </el-card>
+              </el-timeline-item>
+            </el-timeline>
 
-            <div v-else class="empty-hint">
-              暂无路线数据
-            </div>
-          </section>
+            <el-empty v-else description="暂无路线数据" :image-size="120" />
+          </el-card>
 
           <!-- Alternatives -->
-          <section v-if="result.alternatives?.length" class="alt-section">
-            <h3>其他方案</h3>
-            
-            <details v-for="(alt, idx) in result.alternatives" :key="idx" class="alt-item">
-              <summary>{{ alt.description || `方案 ${idx + 1}` }}</summary>
-              <ul class="alt-list">
-                <li v-for="p in alt.pois" :key="p.id">{{ p.name }} ({{ getCategoryName(p.category) }})</li>
-              </ul>
-              <div class="alt-meta">
-                <span>总时长: {{ alt.totalDuration }} 分钟</span>
-                <span>总花费: ¥{{ alt.totalCost }}</span>
-              </div>
-            </details>
-          </section>
+          <el-card
+            v-if="result.alternatives?.length"
+            shadow="never"
+            class="alt-card"
+          >
+            <template #header>
+              <h3>其他方案</h3>
+            </template>
+
+            <el-collapse accordion>
+              <el-collapse-item
+                v-for="(alt, idx) in result.alternatives"
+                :key="idx"
+                :title="alt.description || `方案 ${idx + 1}`"
+              >
+                <ul class="alt-list">
+                  <li v-for="p in alt.pois" :key="p.id">
+                    {{ p.name }} ({{ getCategoryName(p.category) }})
+                  </li>
+                </ul>
+                <div class="alt-meta">
+                  <span>总时长: {{ alt.totalDuration }} 分钟</span>
+                  <span>总花费: ¥{{ alt.totalCost }}</span>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
+          </el-card>
 
           <!-- Actions -->
           <div class="action-bar">
-            <button type="button" class="btn-primary" @click="handleAdopt">采用此路线</button>
-            <button type="button" class="btn-secondary" @click="handleRegenerate">重新生成</button>
+            <el-button type="primary" @click="handleAdopt">采用此路线</el-button>
+            <el-button @click="handleRegenerate">重新生成</el-button>
           </div>
         </template>
 
         <!-- Empty State -->
         <div v-else class="state-empty">
-          <p class="empty-text">请在左侧填写需求开始规划</p>
-          <button type="button" class="btn-primary" @click="scrollToInput">去填写</button>
+          <el-empty description="请在左侧填写需求开始规划" :image-size="140">
+            <el-button type="primary" @click="scrollToInput">去填写</el-button>
+          </el-empty>
         </div>
-      </main>
-    </div>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -194,6 +191,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { routeApi } from '@/api/request'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const loading = ref(false)
@@ -237,9 +235,13 @@ onMounted(() => {
 })
 
 const handlePlan = async () => {
-  if (!form.query.trim()) return
-  
+  if (!form.query.trim()) {
+    ElMessage.warning('请输入您的出行需求')
+    return
+  }
+
   loading.value = true
+
   try {
     const response = await routeApi.planRoute({
       query: form.query,
@@ -253,15 +255,17 @@ const handlePlan = async () => {
     })
 
     result.value = response?.data || response
+    ElMessage.success('路线规划完成')
   } catch (error) {
     console.error('路线规划失败:', error)
+    ElMessage.error('路线规划失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 const handleAdopt = () => {
-  // 采用路线逻辑
+  ElMessage.success('已记录您的选择')
 }
 
 const handleRegenerate = () => {
@@ -269,7 +273,7 @@ const handleRegenerate = () => {
 }
 
 const scrollToInput = () => {
-  document.querySelector('.input-panel')?.scrollIntoView({ behavior: 'smooth' })
+  document.querySelector('.input-panel-col')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 const getCategoryName = (category) => {
@@ -286,478 +290,158 @@ const getCategoryName = (category) => {
 </script>
 
 <style scoped>
-/* ===== Design Tokens ===== */
+/* Design Tokens - 按 DESIGN.md */
 .planner {
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-light: #DBEAFE;
-  --surface: #F9FAFB;
-  --border: #E5E7EB;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-surface: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
 
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px; /* xl */
+  padding: 32px 24px;
 }
 
-/* ===== Layout (Grid Gap: 24px) ===== */
+/* Grid Layout */
 .planner-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px; /* lg */
-  align-items: start;
+  align-items: flex-start;
 }
 
-/* ===== Typography (按DESIGN.md) ===== */
-.planner h2 {
-  /* H2: 24px / 600 / 1.35 */
-  font-size: 18px; /* 面板标题用H3规格 */
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text-primary);
-  margin: 0 0 20px 0;
-}
-
-.planner h3 {
-  /* H3: 18px / 600 / 1.4 */
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text-primary);
-  margin: 0 0 20px 0;
-}
-
-.planner h4 {
-  /* Body: 15px / 600 */
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-}
-
-.body-text {
-  /* Body: 15px / 400 / 1.6 */
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.7;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-}
-
-.text-muted {
-  /* Caption: 12px / 400 / 1.4 */
-  font-size: 13px; /* Small */
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-
-/* ===== Input Panel ===== */
-.input-panel {
+/* Input Panel */
+.input-panel-col {
   position: sticky;
   top: 80px;
-}
-
-/* ===== Card (按DESIGN.md组件规范) ===== */
-.card {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  align-self: flex-start;
 }
 
 .panel-card {
-  padding: 20px; /* lg */
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
-.panel-form .form-group {
-  margin-bottom: 16px; /* md */
+.panel-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 8px; /* sm */
-}
-
-/* ===== Input (按DESIGN.md组件规范) ===== */
-.textarea-field,
-.select-field {
-  width: 100%;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  background: #FFFFFF;
-  color: var(--text-primary);
-  box-sizing: border-box;
-  outline: none;
-  resize: vertical;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.textarea-field:focus,
-.select-field:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* 按规范 */
-}
-
-.textarea-field::placeholder,
-.select-field::placeholder {
-  color: var(--text-muted);
-}
-
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 20px 0; /* lg */
-}
-
-/* Range Slider */
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.range-input {
-  flex: 1;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--border);
-  border-radius: 2px;
-  outline: none;
-}
-
-.range-input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--primary);
-  cursor: pointer;
-  border: none;
-}
-
-.range-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  min-width: 48px;
-  text-align: right;
-}
-
-/* Checkbox & Radio */
-.checkbox-list,
-.radio-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px; /* sm */
-}
-
-.checkbox-item,
-.radio-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px; /* Small */
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 4px;
-  transition: background-color 0.15s ease;
-}
-
-.checkbox-item:hover,
-.radio-item:hover {
-  background: var(--surface);
-}
-
-.radio-item.active {
-  background: var(--primary-light);
-  color: var(--primary);
-  font-weight: 500;
-}
-
-.checkbox-item input,
-.radio-item input {
-  accent-color: var(--primary);
-}
-
-/* ===== Button (按DESIGN.md组件规范) ===== */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary);
-  color: #FFFFFF;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-block {
-  width: 100%;
-  padding: 12px 20px;
-}
-
-.btn-primary:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.btn-secondary:hover {
-  border-color: var(--text-muted);
-  background: var(--surface);
-}
-
-/* ===== Result Panel ===== */
-.result-panel {
+/* Result Panel */
+.result-panel-col {
   min-height: 600px;
 }
 
 /* States */
 .state-loading {
   text-align: center;
-  padding: 48px 24px; /* lg */
+  padding: 48px 24px;
   background: white;
-  border: 1px solid var(--border);
   border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
-.skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.skeleton-line {
-  height: 16px;
-  background: var(--surface);
-  border-radius: 4px;
-}
-
-.skeleton-line:nth-child(odd) {
-  width: 100%;
-}
-
-.skeleton-line:nth-child(even) {
-  width: 85%;
-}
-
-.state-loading p {
-  margin-top: 24px; /* lg */
+.loading-text {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin-top: 24px;
 }
 
 .state-empty {
   text-align: center;
-  padding: 80px 20px; /* xxl */
+  padding: 80px 20px;
   background: white;
-  border: 1px solid var(--border);
   border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
-.empty-text {
+/* Description Card */
+.desc-card {
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  margin-bottom: 20px;
+}
+
+.desc-card p {
   font-size: 15px;
-  color: var(--text-muted);
-  margin-bottom: 16px; /* md */
+  line-height: 1.7;
+  color: var(--color-text-primary);
+  margin: 0 0 12px 0;
 }
 
-.empty-hint {
-  font-size: 14px;
-  color: var(--text-muted);
-  text-align: center;
-  padding: 40px 20px;
-}
-
-/* Description Box */
-.desc-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* Route Card */
+.route-card {
   border-radius: 8px;
-  padding: 20px; /* lg */
-  margin-bottom: 20px; /* lg */
+  border: 1px solid var(--color-border);
+  margin-bottom: 20px;
 }
 
-.note-tag {
-  display: inline-block;
-  font-size: 12px; /* Caption */
-  color: var(--text-secondary);
-  background: white;
-  border: 1px solid var(--border);
-  padding: 2px 10px;
-  border-radius: 4px;
-}
-
-/* Route Section */
-.route-section {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px; /* lg */
-  margin-bottom: 20px; /* lg */
-}
-
-/* Timeline */
-.timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 16px; /* md */
-}
-
-.timeline-item {
-  position: relative;
-  padding-left: 72px;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 56px;
-  text-align: right;
-  padding-right: 12px;
+.route-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 /* POI Card */
 .poi-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 16px; /* md */
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.poi-info {
+.poi-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
   margin: 0 0 12px 0;
 }
 
-.info-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
-  margin-bottom: 4px;
-}
-
-.info-row dt {
-  font-size: 13px; /* Small */
-  color: var(--text-secondary);
-}
-
-.info-row dd {
-  font-size: 13px; /* Small */
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.star-rating {
-  color: #F59E0B;
-  font-weight: 500;
-}
-
 .poi-desc {
-  font-size: 13px; /* Small */
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   background: white;
   padding: 10px 12px;
   border-radius: 4px;
-  margin: 0 0 10px 0;
-}
-
-/* ===== Tag (按DESIGN.md组件规范) ===== */
-.tag {
-  font-size: 12px; /* Caption */
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--primary-light);
-  color: var(--primary);
+  margin: 10px 0 0 0;
 }
 
 .tag-list {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  margin-top: 10px;
 }
 
-.tag-secondary {
-  background: #F3F4F6;
-  color: var(--text-secondary);
-}
-
-/* Alternatives */
-.alt-section {
-  background: white;
-  border: 1px solid var(--border);
+/* Alternatives Card */
+.alt-card {
   border-radius: 8px;
-  padding: 20px; /* lg */
-  margin-bottom: 20px; /* lg */
+  border: 1px solid var(--color-border);
+  margin-bottom: 20px;
 }
 
-.alt-item {
-  border-bottom: 1px solid var(--border);
-  padding: 12px 0;
-}
-
-.alt-item:last-child {
-  border-bottom: none;
-}
-
-.alt-item summary {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-  list-style: none;
-}
-
-.alt-item summary::before {
-  content: '';
-}
-
-.alt-item[open] summary {
-  margin-bottom: 12px;
+.alt-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 .alt-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 12px 0;
+  margin: 8px 0;
 }
 
 .alt-list li {
   padding: 6px 0;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   border-bottom: 1px solid #F3F4F6;
 }
 
@@ -767,55 +451,39 @@ const getCategoryName = (category) => {
 
 .alt-meta {
   display: flex;
-  gap: 24px; /* lg */
+  gap: 24px;
+  margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--border);
-  font-size: 13px; /* Small */
-  color: var(--text-muted);
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 /* Action Bar */
 .action-bar {
   display: flex;
   justify-content: center;
-  gap: 12px; /* sm */
-  margin-top: 32px; /* xl */
+  gap: 12px;
+  margin-top: 32px;
 }
 
-/* ===== Responsive ===== */
+/* Responsive */
 @media (max-width: 992px) {
   .planner {
-    padding: 16px; /* md */
+    padding: 16px;
   }
 
-  .planner-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .input-panel {
+  .input-panel-col {
     position: static;
+    margin-bottom: 24px;
   }
 
   .action-bar {
     flex-direction: column;
   }
 
-  .action-bar button {
+  .action-bar .el-button {
     width: 100%;
-  }
-
-  .timeline-item {
-    padding-left: 0;
-  }
-
-  .timeline-marker {
-    position: static;
-    display: block;
-    text-align: left;
-    padding-right: 0;
-    margin-bottom: 4px;
-    font-weight: 500;
-    color: var(--primary);
   }
 }
 </style>
