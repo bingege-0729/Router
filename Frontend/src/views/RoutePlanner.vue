@@ -1,266 +1,205 @@
 <template>
-  <div class="route-planner">
-    <el-row :gutter="24">
-      <!-- 左侧：输入面板 -->
-      <el-col :xs="24" :lg="8" class="input-panel">
-        <el-card class="query-card" shadow="always">
-          <template #header>
-            <div class="card-header">
-              <span>🎯 路线规划</span>
-              <el-tag type="success" size="small">AI 增强</el-tag>
-            </div>
-          </template>
-
-          <el-form :model="routeForm" label-position="top" class="route-form">
-            <el-form-item label="您的需求（自然语言）">
-              <el-input
-                v-model="routeForm.query"
-                type="textarea"
-                :rows="3"
+  <div class="planner">
+    <div class="planner-grid">
+      <!-- Left: Input Panel -->
+      <aside class="input-panel">
+        <div class="card panel-card">
+          <h2>路线规划</h2>
+          
+          <form @submit.prevent="handlePlan" class="panel-form">
+            <div class="form-group">
+              <label class="form-label">出行需求</label>
+              <textarea 
+                v-model="form.query"
+                class="textarea-field"
+                rows="3"
                 placeholder="例如：周末想去公园和博物馆，不想排队，预算500元内"
                 maxlength="200"
-                show-word-limit
-              />
-            </el-form-item>
+              ></textarea>
+            </div>
 
-            <el-divider content-position="left">详细参数</el-divider>
+            <div class="divider"></div>
 
-            <el-form-item label="游玩时长">
-              <el-select v-model="routeForm.totalHours" placeholder="选择时长">
-                <el-option label="2小时（快速）" :value="2" />
-                <el-option label="4小时（半天）" :value="4" />
-                <el-option label="6小时（推荐）" :value="6" />
-                <el-option label="8小时（全天）" :value="8" />
-                <el-option label="12小时（深度游）" :value="12" />
-              </el-select>
-            </el-form-item>
+            <div class="form-group">
+              <label class="form-label">游玩时长</label>
+              <select v-model="form.totalHours" class="select-field">
+                <option :value="2">2小时（快速）</option>
+                <option :value="4">4小时（半天）</option>
+                <option :value="6">6小时（推荐）</option>
+                <option :value="8">8小时（全天）</option>
+                <option :value="12">12小时（深度游）</option>
+              </select>
+            </div>
 
-            <el-form-item label="预算范围 (元)">
-              <el-slider 
-                v-model="routeForm.maxBudget" 
-                :min="100" 
-                :max="2000" 
-                :step="50"
-                show-input
-              />
-            </el-form-item>
+            <div class="form-group">
+              <label class="form-label">预算范围（元）</label>
+              <div class="slider-row">
+                <input 
+                  type="range"
+                  v-model.number="form.maxBudget"
+                  min="100"
+                  max="2000"
+                  step="50"
+                  class="range-input"
+                />
+                <span class="range-value">{{ form.maxBudget }}</span>
+              </div>
+            </div>
 
-            <el-form-item label="兴趣类别（可多选）">
-              <el-checkbox-group v-model="routeForm.categories">
-                <el-checkbox label="RESTAURANT">🍽️ 餐厅</el-checkbox>
-                <el-checkbox label="ATTRACTION">🎡 景点</el-checkbox>
-                <el-checkbox label="PARK">🌳 公园</el-checkbox>
-                <el-checkbox label="MUSEUM">🏛️ 博物馆</el-checkbox>
-                <el-checkbox label="SHOPPING">🛍️ 购物</el-checkbox>
-                <el-checkbox label="CAFE">☕ 咖啡</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
+            <div class="form-group">
+              <label class="form-label">兴趣类别</label>
+              <div class="checkbox-list">
+                <label v-for="cat in categories" :key="cat.value" class="checkbox-item">
+                  <input type="checkbox" :value="cat.value" v-model="form.categories" />
+                  <span>{{ cat.label }}</span>
+                </label>
+              </div>
+            </div>
 
-            <el-form-item label="优化目标">
-              <el-radio-group v-model="routeForm.optimizationGoal">
-                <el-radio-button value="BALANCED">⚖️ 综合平衡</el-radio-button>
-                <el-radio-button value="SHORTEST_TIME">⚡ 省时间</el-radio-button>
-                <el-radio-button value="LEAST_WALKING">🚶 少走路</el-radio-button>
-                <el-radio-button value="LOWEST_COST">💰 省钱</el-radio-button>
-                <el-radio-button value="LEAST_WAITING">⏰ 不排队</el-radio-button>
-                <el-radio-button value="HIGHEST_RATED">⭐ 高评分</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
+            <div class="form-group">
+              <label class="form-label">优化目标</label>
+              <div class="radio-list">
+                <label 
+                  v-for="opt in optimizationOptions" 
+                  :key="opt.value"
+                  class="radio-item"
+                  :class="{ active: form.optimizationGoal === opt.value }"
+                >
+                  <input 
+                    type="radio" 
+                    :value="opt.value" 
+                    v-model="form.optimizationGoal"
+                    name="optimization"
+                  />
+                  {{ opt.label }}
+                </label>
+              </div>
+            </div>
 
-            <el-form-item label="必去地点">
-              <el-select
-                v-model="routeForm.mustVisit"
-                multiple
-                filterable
-                allow-create
-                default-first-option
-                placeholder="输入或选择必去地点"
-                style="width: 100%"
-              >
-                <!-- 动态加载热门POI -->
-              </el-select>
-            </el-form-item>
-
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                @click="handlePlanRoute"
-                :loading="loading"
-                style="width: 100%"
-                size="large"
-              >
-                {{ loading ? '🤖 AI 正在智能规划...' : '🚀 开始生成最优路线' }}
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-col>
-
-      <!-- 右侧：结果展示 -->
-      <el-col :xs="24" :lg="16" class="result-panel">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading-container">
-          <el-skeleton :rows="10" animated />
-          <p class="loading-text">AI正在分析您的需求并优化路线...</p>
+            <button 
+              type="submit" 
+              class="btn-primary btn-block"
+              style="margin-top: 8px;"
+              :disabled="loading"
+            >
+              {{ loading ? '正在规划...' : '生成路线' }}
+            </button>
+          </form>
         </div>
+      </aside>
 
-        <!-- 结果展示 -->
-        <div v-else-if="routeResult" class="result-container">
-          <!-- AI 描述 -->
-          <el-card class="ai-description-card" shadow="hover">
-            <div class="ai-message">
-              <el-icon><ChatDotRound /></el-icon>
-              <p>{{ routeResult.message }}</p>
-            </div>
-            
-            <div v-if="routeResult.personalizationNote" class="personalization-note">
-              <el-tag type="warning" effect="dark">{{ routeResult.personalizationNote }}</el-tag>
-            </div>
-          </el-card>
-
-          <!-- 主路线 -->
-          <el-card class="route-card" shadow="hover">
-            <template #header>
-              <div class="card-header">
-                <span>📍 推荐路线</span>
-                <el-tag type="success">主方案</el-tag>
-              </div>
-            </template>
-
-            <el-timeline v-if="routeResult.mainRoute && routeResult.mainRoute.pois">
-              <el-timeline-item
-                v-for="(poi, index) in routeResult.mainRoute.pois"
-                :key="poi.id || index"
-                :timestamp="'第 ' + (index + 1) + ' 站'"
-                placement="top"
-                :type="getTimelineType(index)"
-              >
-                <el-card shadow="never" class="poi-card">
-                  <h4>{{ poi.name }}</h4>
-                  <el-descriptions :column="2" size="small" border>
-                    <el-descriptions-item label="类别">
-                      <el-tag size="small">{{ getCategoryName(poi.category) }}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item label="评分">
-                      <el-rate 
-                        v-model="poi.rating" 
-                        disabled 
-                        show-score 
-                        text-color="#ff9900"
-                      />
-                    </el-descriptions-item>
-                    <el-descriptions-item label="人均消费">
-                      ¥{{ poi.avgCost || '免费' }}
-                    </el-descriptions-item>
-                    <el-descriptions-item label="建议停留">
-                      {{ poi.recommendedDuration || 90 }} 分钟
-                    </el-descriptions-item>
-                  </el-descriptions>
-                  
-                  <div v-if="poi.description" class="poi-highlight">
-                    <el-alert 
-                      :title="poi.description" 
-                      type="info" 
-                      :closable="false"
-                      show-icon
-                    />
-                  </div>
-                  
-                  <div class="poi-tags" v-if="poi.tags && poi.tags.length">
-                    <el-tag 
-                      v-for="tag in poi.tags" 
-                      :key="tag" 
-                      size="small" 
-                      class="poi-tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                </el-card>
-              </el-timeline-item>
-            </el-timeline>
-
-            <div v-else class="empty-route">
-              <el-empty description="暂无路线数据" />
-            </div>
-          </el-card>
-
-          <!-- 备选方案 -->
-          <el-card 
-            v-if="routeResult.alternatives && routeResult.alternatives.length > 0"
-            class="alternatives-card"
-            shadow="hover"
-          >
-            <template #header>
-              <div class="card-header">
-                <span>💡 其他推荐方案</span>
-              </div>
-            </template>
-
-            <el-collapse accordion>
-              <el-collapse-item 
-                v-for="(alt, index) in routeResult.alternatives" 
-                :key="index"
-                :title="alt.description || `备选方案 ${index + 1}`"
-              >
-                <div class="alternative-content">
-                  <p><strong>包含POI：</strong></p>
-                  <ul>
-                    <li v-for="poi in alt.pois" :key="poi.id">
-                      {{ poi.name }} ({{ getCategoryName(poi.category) }})
-                    </li>
-                  </ul>
-                  <p><strong>总时长：</strong>{{ alt.totalDuration }} 分钟</p>
-                  <p><strong>总花费：</strong>¥{{ alt.totalCost }}</p>
-                </div>
-              </el-collapse-item>
-            </el-collapse>
-          </el-card>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button type="primary" @click="handleAdoptRoute">
-              <el-icon><Check /></el-icon>
-              采用此路线
-            </el-button>
-            <el-button @click="handleRegenerate">
-              <el-icon><RefreshRight /></el-icon>
-              重新生成
-            </el-button>
-            <el-button @click="handleExport">
-              <el-icon><Download /></el-icon>
-              导出分享
-            </el-button>
+      <!-- Right: Result Panel -->
+      <main class="result-panel">
+        <!-- Loading State -->
+        <div v-if="loading" class="state-loading">
+          <div class="skeleton">
+            <div class="skeleton-line" v-for="i in 6" :key="i"></div>
           </div>
+          <p class="text-muted">正在分析需求并优化路线...</p>
         </div>
 
-        <!-- 空状态 -->
-        <div v-else class="empty-state">
-          <el-empty description="请在左侧填写需求开始规划" :image-size="200">
-            <el-button type="primary" @click="$refs.queryForm?.scrollIntoView()">
-              去填写
-            </el-button>
-          </el-empty>
+        <!-- Result Content -->
+        <template v-else-if="result">
+          <!-- Description -->
+          <div v-if="result.message" class="desc-box">
+            <p class="body-text">{{ result.message }}</p>
+            <span v-if="result.personalizationNote" class="note-tag">
+              {{ result.personalizationNote }}
+            </span>
+          </div>
+
+          <!-- Main Route -->
+          <section class="route-section">
+            <h3>推荐路线</h3>
+            
+            <div v-if="result.mainRoute?.pois?.length" class="timeline">
+              <article 
+                v-for="(poi, idx) in result.mainRoute.pois" 
+                :key="poi.id || idx"
+                class="timeline-item"
+              >
+                <span class="timeline-marker text-muted">第{{ idx + 1 }}站</span>
+                <div class="card poi-card">
+                  <h4>{{ poi.name }}</h4>
+                  
+                  <dl class="poi-info">
+                    <div class="info-row">
+                      <dt>类别</dt>
+                      <dd><span class="tag">{{ getCategoryName(poi.category) }}</span></dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>评分</dt>
+                      <dd>
+                        <span class="star-rating">{{ poi.rating || 0 }}</span>
+                      </dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>人均消费</dt>
+                      <dd>{{ poi.avgCost ? `¥${poi.avgCost}` : '免费' }}</dd>
+                    </div>
+                    <div class="info-row">
+                      <dt>建议停留</dt>
+                      <dd>{{ poi.recommendedDuration || 90 }} 分钟</dd>
+                    </div>
+                  </dl>
+
+                  <p v-if="poi.description" class="poi-desc">{{ poi.description }}</p>
+
+                  <div v-if="poi.tags?.length" class="tag-list">
+                    <span v-for="tag in poi.tags" :key="tag" class="tag tag-secondary">{{ tag }}</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div v-else class="empty-hint">
+              暂无路线数据
+            </div>
+          </section>
+
+          <!-- Alternatives -->
+          <section v-if="result.alternatives?.length" class="alt-section">
+            <h3>其他方案</h3>
+            
+            <details v-for="(alt, idx) in result.alternatives" :key="idx" class="alt-item">
+              <summary>{{ alt.description || `方案 ${idx + 1}` }}</summary>
+              <ul class="alt-list">
+                <li v-for="p in alt.pois" :key="p.id">{{ p.name }} ({{ getCategoryName(p.category) }})</li>
+              </ul>
+              <div class="alt-meta">
+                <span>总时长: {{ alt.totalDuration }} 分钟</span>
+                <span>总花费: ¥{{ alt.totalCost }}</span>
+              </div>
+            </details>
+          </section>
+
+          <!-- Actions -->
+          <div class="action-bar">
+            <button type="button" class="btn-primary" @click="handleAdopt">采用此路线</button>
+            <button type="button" class="btn-secondary" @click="handleRegenerate">重新生成</button>
+          </div>
+        </template>
+
+        <!-- Empty State -->
+        <div v-else class="state-empty">
+          <p class="empty-text">请在左侧填写需求开始规划</p>
+          <button type="button" class="btn-primary" @click="scrollToInput">去填写</button>
         </div>
-      </el-col>
-    </el-row>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { 
-  ChatDotRound, Check, RefreshRight, Download 
-} from '@element-plus/icons-vue'
 import { routeApi } from '@/api/request'
-import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const loading = ref(false)
-const routeResult = ref(null)
+const result = ref(null)
 
-const routeForm = reactive({
+const form = reactive({
   query: '',
   totalHours: 6,
   maxBudget: 500,
@@ -269,206 +208,614 @@ const routeForm = reactive({
   mustVisit: []
 })
 
+const categories = [
+  { value: 'RESTAURANT', label: '餐厅' },
+  { value: 'ATTRACTION', label: '景点' },
+  { value: 'PARK', label: '公园' },
+  { value: 'MUSEUM', label: '博物馆' },
+  { value: 'SHOPPING', label: '购物' },
+  { value: 'CAFE', label: '咖啡' }
+]
+
+const optimizationOptions = [
+  { value: 'BALANCED', label: '综合平衡' },
+  { value: 'SHORTEST_TIME', label: '省时间' },
+  { value: 'LEAST_WALKING', label: '少走路' },
+  { value: 'LOWEST_COST', label: '省钱' },
+  { value: 'LEAST_WAITING', label: '不排队' },
+  { value: 'HIGHEST_RATED', label: '高评分' }
+]
+
 onMounted(() => {
   if (route.query.result) {
     try {
-      routeResult.value = JSON.parse(route.query.result)
+      result.value = JSON.parse(route.query.result)
     } catch (e) {
       console.error('解析路由参数失败:', e)
     }
   }
 })
 
-const handlePlanRoute = async () => {
-  if (!routeForm.query.trim()) {
-    ElMessage.warning('请输入您的出行需求')
-    return
-  }
-
+const handlePlan = async () => {
+  if (!form.query.trim()) return
+  
   loading.value = true
-
   try {
     const response = await routeApi.planRoute({
-      query: routeForm.query,
+      query: form.query,
       startLat: 30.2741,
       startLng: 120.1551,
-      totalHours: routeForm.totalHours,
-      categories: routeForm.categories.length > 0 ? routeForm.categories : undefined,
-      maxBudget: routeForm.maxBudget,
-      optimizationGoal: routeForm.optimizationGoal,
-      mustVisit: routeForm.mustVisit.length > 0 ? routeForm.mustVisit : undefined
+      totalHours: form.totalHours,
+      categories: form.categories.length > 0 ? form.categories : undefined,
+      maxBudget: form.maxBudget,
+      optimizationGoal: form.optimizationGoal,
+      mustVisit: form.mustVisit.length > 0 ? form.mustVisit : undefined
     })
 
-    // ✅ 正确解构Result包装类
-    if (response && response.data) {
-      routeResult.value = response.data
-    } else {
-      routeResult.value = response
-    }
-
-    ElMessage.success('✅ 路线规划完成！')
-
-    console.log('📊 路线规划结果:', routeResult.value)
-
+    result.value = response?.data || response
   } catch (error) {
-    console.error('❌ 路线规划失败:', error)
-    ElMessage.error('路线规划失败，请稍后重试')
+    console.error('路线规划失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-const handleAdoptRoute = () => {
-  ElMessage.success('已记录您的选择！系统将根据此优化推荐')
-  
-  // TODO: 调用用户反馈API
+const handleAdopt = () => {
+  // 采用路线逻辑
 }
 
 const handleRegenerate = () => {
-  handlePlanRoute()
+  handlePlan()
 }
 
-const handleExport = () => {
-  ElMessage.info('导出功能开发中...')
-}
-
-const getTimelineType = (index) => {
-  const types = ['primary', 'success', 'warning', 'danger', 'info']
-  return types[index % types.length]
+const scrollToInput = () => {
+  document.querySelector('.input-panel')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 const getCategoryName = (category) => {
-  const categoryMap = {
-    RESTAURANT: '🍽️ 餐厅',
-    ATTRACTION: '🎡 景点',
-    PARK: '🌳 公园',
-    MUSEUM: '🏛️ 博物馆',
-    SHOPPING: '🛍️ 购物',
-    CAFE: '☕ 咖啡'
+  const map = {
+    RESTAURANT: '餐厅',
+    ATTRACTION: '景点',
+    PARK: '公园',
+    MUSEUM: '博物馆',
+    SHOPPING: '购物',
+    CAFE: '咖啡'
   }
-  return categoryMap[category] || category || '未知'
+  return map[category] || category || '未知'
 }
 </script>
 
 <style scoped>
-.route-planner {
-  max-width: 1600px;
+/* ===== Design Tokens ===== */
+.planner {
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-light: #DBEAFE;
+  --surface: #F9FAFB;
+  --border: #E5E7EB;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 32px 24px; /* xl */
 }
 
+/* ===== Layout (Grid Gap: 24px) ===== */
+.planner-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px; /* lg */
+  align-items: start;
+}
+
+/* ===== Typography (按DESIGN.md) ===== */
+.planner h2 {
+  /* H2: 24px / 600 / 1.35 */
+  font-size: 18px; /* 面板标题用H3规格 */
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.planner h3 {
+  /* H3: 18px / 600 / 1.4 */
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.planner h4 {
+  /* Body: 15px / 600 */
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.body-text {
+  /* Body: 15px / 400 / 1.6 */
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.text-muted {
+  /* Caption: 12px / 400 / 1.4 */
+  font-size: 13px; /* Small */
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ===== Input Panel ===== */
 .input-panel {
-  margin-bottom: 20px;
-}
-
-.query-card {
   position: sticky;
   top: 80px;
 }
 
-.card-header {
+/* ===== Card (按DESIGN.md组件规范) ===== */
+.card {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.panel-card {
+  padding: 20px; /* lg */
+}
+
+.panel-form .form-group {
+  margin-bottom: 16px; /* md */
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px; /* sm */
+}
+
+/* ===== Input (按DESIGN.md组件规范) ===== */
+.textarea-field,
+.select-field {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea-field:focus,
+.select-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* 按规范 */
+}
+
+.textarea-field::placeholder,
+.select-field::placeholder {
+  color: var(--text-muted);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0; /* lg */
+}
+
+/* Range Slider */
+.slider-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 18px;
-  font-weight: bold;
+  gap: 12px;
 }
 
-.route-form {
-  padding: 10px 0;
+.range-input {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
 }
 
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+}
+
+.range-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 48px;
+  text-align: right;
+}
+
+/* Checkbox & Radio */
+.checkbox-list,
+.radio-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px; /* sm */
+}
+
+.checkbox-item,
+.radio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px; /* Small */
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.checkbox-item:hover,
+.radio-item:hover {
+  background: var(--surface);
+}
+
+.radio-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.checkbox-item input,
+.radio-item input {
+  accent-color: var(--primary);
+}
+
+/* ===== Button (按DESIGN.md组件规范) ===== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-block {
+  width: 100%;
+  padding: 12px 20px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  background: var(--surface);
+}
+
+/* ===== Result Panel ===== */
 .result-panel {
   min-height: 600px;
 }
 
-.loading-container {
+/* States */
+.state-loading {
   text-align: center;
-  padding: 40px;
+  padding: 48px 24px; /* lg */
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
-.loading-text {
-  color: #909399;
-  margin-top: 20px;
-  font-size: 14px;
-}
-
-.ai-description-card {
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-.ai-message {
+.skeleton {
   display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: var(--surface);
+  border-radius: 4px;
+}
+
+.skeleton-line:nth-child(odd) {
+  width: 100%;
+}
+
+.skeleton-line:nth-child(even) {
+  width: 85%;
+}
+
+.state-loading p {
+  margin-top: 24px; /* lg */
+}
+
+.state-empty {
+  text-align: center;
+  padding: 80px 20px; /* xxl */
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.empty-text {
   font-size: 15px;
-  line-height: 1.8;
-  color: #303133;
+  color: var(--text-muted);
+  margin-bottom: 16px; /* md */
 }
 
-.ai-message .el-icon {
-  font-size: 24px;
-  color: #409eff;
-  flex-shrink: 0;
-  margin-top: 4px;
+.empty-hint {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 20px;
 }
 
-.personalization-note {
-  margin-top: 12px;
+/* Description Box */
+.desc-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px; /* lg */
+  margin-bottom: 20px; /* lg */
 }
 
-.route-card {
-  margin-bottom: 20px;
+.note-tag {
+  display: inline-block;
+  font-size: 12px; /* Caption */
+  color: var(--text-secondary);
+  background: white;
+  border: 1px solid var(--border);
+  padding: 2px 10px;
+  border-radius: 4px;
 }
 
+/* Route Section */
+.route-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px; /* lg */
+  margin-bottom: 20px; /* lg */
+}
+
+/* Timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* md */
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 72px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  text-align: right;
+  padding-right: 12px;
+}
+
+/* POI Card */
 .poi-card {
-  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px; /* md */
 }
 
-.poi-card h4 {
+.poi-info {
   margin: 0 0 12px 0;
-  font-size: 18px;
-  color: #303133;
 }
 
-.poi-highlight {
-  margin-top: 12px;
+.info-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin-bottom: 4px;
 }
 
-.poi-tags {
-  margin-top: 8px;
+.info-row dt {
+  font-size: 13px; /* Small */
+  color: var(--text-secondary);
+}
+
+.info-row dd {
+  font-size: 13px; /* Small */
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.star-rating {
+  color: #F59E0B;
+  font-weight: 500;
+}
+
+.poi-desc {
+  font-size: 13px; /* Small */
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: white;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin: 0 0 10px 0;
+}
+
+/* ===== Tag (按DESIGN.md组件规范) ===== */
+.tag {
+  font-size: 12px; /* Caption */
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.tag-list {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.poi-tag {
-  margin: 0;
+.tag-secondary {
+  background: #F3F4F6;
+  color: var(--text-secondary);
 }
 
-.alternatives-card {
-  margin-bottom: 20px;
+/* Alternatives */
+.alt-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px; /* lg */
+  margin-bottom: 20px; /* lg */
 }
 
-.alternative-content ul {
+.alt-item {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.alt-item:last-child {
+  border-bottom: none;
+}
+
+.alt-item summary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.alt-item summary::before {
+  content: '';
+}
+
+.alt-item[open] summary {
+  margin-bottom: 12px;
+}
+
+.alt-list {
   list-style: none;
   padding: 0;
-  margin: 8px 0;
+  margin: 0 0 12px 0;
 }
 
-.alternative-content li {
-  padding: 4px 0;
-  color: #606266;
+.alt-list li {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid #F3F4F6;
 }
 
-.action-buttons {
+.alt-list li:last-child {
+  border-bottom: none;
+}
+
+.alt-meta {
   display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin: 30px 0;
+  gap: 24px; /* lg */
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px; /* Small */
+  color: var(--text-muted);
 }
 
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
+/* Action Bar */
+.action-bar {
+  display: flex;
+  justify-content: center;
+  gap: 12px; /* sm */
+  margin-top: 32px; /* xl */
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 992px) {
+  .planner {
+    padding: 16px; /* md */
+  }
+
+  .planner-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .input-panel {
+    position: static;
+  }
+
+  .action-bar {
+    flex-direction: column;
+  }
+
+  .action-bar button {
+    width: 100%;
+  }
+
+  .timeline-item {
+    padding-left: 0;
+  }
+
+  .timeline-marker {
+    position: static;
+    display: block;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--primary);
+  }
 }
 </style>
